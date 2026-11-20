@@ -1,0 +1,18 @@
+# Negative control for the GACS evidence workflow: every command exits 0, and every one must be refused.
+gacs: 1
+provides:
+  - contract: api/openapi.json
+    protocol: openapi
+    stability: beta
+    verify:
+      conformance: python3 tests/bad.py skipped
+      security: python3 tests/bad.py incomplete
+consumes:
+  - provider: github.com/glencoe-delivery/gacs-fixture-product/broken/api/openapi.json
+    protocol: openapi
+    built_against: web/contracts/notes.json
+    source: web/src
+    client: typescript
+    verify:
+      static: python3 tests/bad.py malformed
+      runtime: python3 tests/bad.py silent

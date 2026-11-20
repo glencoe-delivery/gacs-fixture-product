@@ -1,0 +1,82 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Notes (GACS fixture product)",
+    "version": "1.0.0",
+    "description": "A small multi-tenant notes API that proves the GACS evidence workflow end to end.",
+    "contact": {"name": "GACS", "url": "https://github.com/glencoe-delivery/gacs-fixture-product"},
+    "license": {"name": "MIT", "identifier": "MIT"}
+  },
+  "servers": [{"url": "http://127.0.0.1:8080", "description": "Local test server."}],
+  "tags": [
+    {"name": "notes", "description": "Notes, scoped to one tenant."},
+    {"name": "health", "description": "Service health."}
+  ],
+  "security": [{"bearer": []}],
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Report service health.",
+        "description": "Returns 200 while the service is up. Needs no credential.",
+        "tags": ["health"],
+        "security": [],
+        "responses": {
+          "200": {"description": "The service is up.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}, "example": {"status": "ok"}}}}
+        }
+      }
+    },
+    "/v1/tenants/{tenant_id}/notes": {
+      "post": {
+        "operationId": "createNote",
+        "summary": "Create a note.",
+        "description": "Creates a note in the caller's own tenant. Needs the notes:write scope.",
+        "tags": ["notes"],
+        "parameters": [{"$ref": "#/components/parameters/TenantId"}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NoteInput"}, "example": {"text": "hello"}}}},
+        "responses": {
+          "201": {"description": "The note was created.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Note"}, "example": {"id": "n1", "tenant_id": "a", "text": "hello"}}}},
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "403": {"$ref": "#/components/responses/Problem"},
+          "404": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/v1/tenants/{tenant_id}/notes/{note_id}": {
+      "get": {
+        "operationId": "getNote",
+        "summary": "Read a note.",
+        "description": "Returns a note of the caller's own tenant. Needs the notes:read scope.",
+        "tags": ["notes"],
+        "parameters": [
+          {"$ref": "#/components/parameters/TenantId"},
+          {"name": "note_id", "in": "path", "required": true, "description": "The note's id.", "schema": {"type": "string", "maxLength": 64}, "example": "n1"}
+        ],
+        "responses": {
+          "200": {"description": "The note.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Note"}, "example": {"id": "n1", "tenant_id": "a", "text": "hello"}}}},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "403": {"$ref": "#/components/responses/Problem"},
+          "404": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {"type": "http", "scheme": "bearer", "description": "A bearer token. Its tenant and scopes come from the credential, never from the request."}
+    },
+    "parameters": {
+      "TenantId": {"name": "tenant_id", "in": "path", "required": true, "description": "The tenant. It must be the credential's own tenant.", "schema": {"type": "string", "maxLength": 64}, "example": "a"}
+    },
+    "responses": {
+      "Problem": {"description": "An RFC 9457 problem.", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}, "example": {"type": "about:blank", "title": "Not Found", "status": 404}}}}
+    },
+    "schemas": {
+      "Health": {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["ok"], "example": "ok"}}},
+      "NoteInput": {"type": "object", "required": ["text"], "additionalProperties": false, "properties": {"text": {"type": "string", "minLength": 1, "maxLength": 500, "example": "hello"}}},
+      "Note": {"type": "object", "required": ["id", "tenant_id", "text"], "properties": {"id": {"type": "string", "example": "n1"}, "tenant_id": {"type": "string", "example": "a"}, "text": {"type": "string", "example": "hello"}}},
+      "Problem": {"type": "object", "required": ["type", "title", "status"], "properties": {"type": {"type": "string", "example": "about:blank"}, "title": {"type": "string", "example": "Not Found"}, "status": {"type": "integer", "example": 404}}}
+    }
+  }
+}
